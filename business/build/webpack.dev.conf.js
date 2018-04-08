@@ -12,10 +12,11 @@ const portfinder = require('portfinder')
 
 const express = require('express')
 const app = express()
-let appData =  require('../mock/goods.json')
-let goods = appData.goodsList
-const apiRouter = express.Router()
-app.use('/api', apiRouter)
+
+// let appData =  require('../mock/goods.json')
+// let goods = appData.goodsList
+// const apiRouter = express.Router()
+// app.use('/api', apiRouter)
 
 const HOST = process.env.HOST
 const PORT = process.env.PORT && Number(process.env.PORT)

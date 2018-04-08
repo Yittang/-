@@ -15,12 +15,13 @@
           <div class="navbar-right-container" style="display: flex;">
             <div class="navbar-menu-container">
               <!--<a href="/" class="navbar-link">我的账户</a>-->
-              <span class="navbar-link"></span>
-              <a href="javascript:void(0)" class="navbar-link">登入</a>
-              <a href="javascript:void(0)" class="navbar-link">登出</a>
+              <span class="navbar-link" v-text="nickName" v-if="nickName" style="margin-right:20px"></span>
+              <a href="javascript:void(0)" class="navbar-link" @click="signModalFlag=true">注册</a>
+              <a href="javascript:void(0)" class="navbar-link" v-if="!nickName" @click="loginModalFlag=true">登录</a>
+              <a href="javascript:void(0)" @click="logOut" v-if="nickName" class="navbar-link">登出</a>
               <div class="navbar-cart-container">
-                <span class="navbar-cart-count"></span>
-                <a class="navbar-link navbar-cart-link" href="/#/cart">
+                <span class="navbar-cart-count" v-if="nickName">{{cartCount}}</span>
+                <a class="navbar-link navbar-cart-link" href="/cart">
                   <svg class="navbar-cart-logo">
                     <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-cart"></use>
                   </svg>
@@ -29,14 +30,168 @@
             </div>
           </div>
         </div>
+        <!-- 登录模态框 -->
+        <div class="md-modal modal-msg md-modal-transition" :class="{'md-show':loginModalFlag}">
+          <div class="md-modal-inner">
+            <div class="md-top">
+              <div class="md-title">登录</div>
+              <button class="md-close" @click="loginModalFlag=false">关闭</button>
+            </div>
+            <div class="md-content">
+              <div class="confirm-tips">
+                <div class="error-wrap">
+                  <span class="error error-show" v-show="errorTip">用户名或者密码错误</span>
+                </div>
+                <ul>
+                  <li class="regi_form_input">
+                    <i class="icon IconPeople"></i>
+                    <input type="text" tabindex="1" name="loginname" v-model="userName" class="regi_login_input regi_input_left" placeholder="用户名" data-type="loginname">
+                  </li>
+                  <li class="regi_form_input noMargin">
+                    <i class="icon IconPwd"></i>
+                    <input type="password" tableindex="2" name="password" v-model="userPwd" class="regi_login_input regi_login_input_left login_input-no input_text" placeholder="密码" @keyup.enter="login">
+                  </li>
+                </ul>
+              </div>
+              <div class="login-wrap">
+                <a href="#" class="btn-login" @click="login">登  录</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 注册模态框 -->
+        <div class="md-modal modal-msg md-modal-transition" :class="{'md-show':signModalFlag}">
+          <div class="md-modal-inner">
+            <div class="md-top">
+              <div class="md-title">注册</div>
+              <button class="md-close" @click="signModalFlag=false">关闭</button>
+            </div>
+            <div class="md-content">
+              <div class="confirm-tips">
+                <ul>
+                  <li class="regi_form_input">
+                    <i class="icon IconPeople"></i>
+                    <input type="text" tabindex="1" name="loginname" v-model="signUserName" class="regi_login_input regi_input_left" placeholder="用户名" data-type="loginname">
+                  </li>
+                  <li class="regi_form_input noMargin">
+                    <i class="icon IconPwd"></i>
+                    <input type="password" tableindex="2" name="password" v-model="signUserPwd" class="regi_login_input regi_login_input_left login_input-no input_text" placeholder="密码" @keyup.enter="sign">
+                  </li>
+                </ul>
+              </div>
+              <div class="login-wrap">
+                <a href="#" class="btn-login" @click="sign">注  册</a>
+              </div>
+            </div>
+          </div>
+        </div>
+    <!-- 登录遮罩层 -->
+    <div class="md-overlay" v-if="loginModalFlag" @click="loginModalFlag=false"></div>
+    <!-- 注册遮罩层 -->
+    <div class="md-overlay" v-if="signModalFlag" @click="signModalFlag=false"></div>
     </header>
 </template>
 
 <script type="text/ecmascript-6">
-	
-	export default {}
+	import {mapState} from 'vuex'
+	export default {
+    data() {
+      return {
+        loginModalFlag: false,
+        signModalFlag: false,
+        userName: '',
+        signUserName: '',
+        signUserPwd: '',
+        userPwd: '',
+        errorTip: false,
+      }
+    },
+    mounted() {
+      this.checkLogin()
+    },
+    computed: {
+      ...mapState(['nickName', 'cartCount'])
+      // nickName () {
+      //   return this.$store.state.nickName
+      // },
+      // cartCount () {
+      //   return this.$store.state.cartCount
+      // }
+    },
+    methods: {
+      checkLogin() {
+        this.$axios.get('/users/checkLogin')
+        .then((response) => {
+          let res = response.data
+          if (res.status === '0') {
+            //this.nickName = res.result
+            this.$store.commit('updateUserInfo', res.result)
+            this.getCartCount()
+          }
+        })
+      },
+      sign() {
+        this.$axios.post('/users/sign', {
+          userName: this.signUserName,
+          userPwd: this.signUserPwd
+        })
+        .then((response) => {
+          let res = response.data
+          if(res.status == '0') {
+            this.signModalFlag = false
+            this.getCartCount()
+          }
+        })
+      },
+      login() {
+        if(!this.userName || !this.userPwd) {
+          this.errorTip = true
+        }
+        this.$axios.post("/users/login", {
+          userName: this.userName,
+          userPwd: this.userPwd
+        })
+        .then((response) => {
+          let res = response.data
+          if (res.status === '0') {
+            this.loginModalFlag = false
+            this.errorTip = false
+            //this.nickName = res.result.userName
+            this.$store.commit('updateUserInfo', res.result.userName)
+            this.getCartCount()
+          } else {
+            this.errorTip = true
+          }
+        })
+      },
+      logOut() {
+        this.$axios.post("/users/logout")
+        .then((response) => {
+          let res = response.data
+          if (res.status === '0') {
+            this.userName = ''
+            this.userPwd = ''
+          } else {
+            this.errorTip = true
+          }
+          this.$store.commit('updateUserInfo', '')
+          this.$store.commit('initCartCount', '')
+        })
+      },
+      getCartCount () {
+        this.$axios.get('/users/getCartCount')
+        .then((response) => {
+          let res = response.data
+          if (res.status === '0') {
+            this.$store.commit('initCartCount', res.result)
+          }
+        })
+      }
+
+    }
+  }
 </script>
 
 <style rel="stylesheet">
-	
+	@import '../assets/css/login.css';
 </style>

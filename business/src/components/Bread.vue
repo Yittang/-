@@ -3,7 +3,7 @@
       <div class="container">
         <nav class="nav-breadcrumb">
           <a href="/">首页</a>
-          <slot name="商品"></slot>
+          <slot></slot>
         </nav>
       </div>
     </div>
